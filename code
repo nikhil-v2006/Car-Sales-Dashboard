@@ -1,0 +1,99 @@
+import dash
+from dash import dcc, html
+import plotly.express as px
+import pandas as pd
+import dash_table
+
+# Load the data
+df = pd.read_csv('filtered_car_sales_data.csv')
+
+# Dash app setup
+app = dash.Dash(__name__)
+
+# Car Make - Bar Chart with Color
+car_make_chart = px.bar(df, x='Car Make', title='Number of Cars Sold per Make',
+                        color='Car Make', color_discrete_sequence=px.colors.qualitative.Set2)
+
+# Car Model - Pie Chart with Colors
+car_model_chart = px.pie(df, names='Car Model', title='Proportion of Each Car Model Sold',
+                          color='Car Model', color_discrete_sequence=px.colors.qualitative.Pastel)
+
+# Commission Rate - Histogram with Custom Bins and Color
+commission_rate_chart = px.histogram(df, x='Commission Rate', title='Distribution of Commission Rates',
+                                      color_discrete_sequence=['#636EFA'])
+commission_rate_chart.update_traces(marker=dict(line=dict(color='#000000', width=1)))
+
+# Commission Earned - Histogram with Colorful Bins
+commission_earned_chart = px.histogram(df, x='Commission Earned', title='Distribution of Commission Earned',
+                                        color_discrete_sequence=px.colors.sequential.Plasma)
+
+# Sale Price - Box Plot with Color
+sale_price_chart = px.box(df, y='Sale Price', title='Sale Price Distribution',
+                           color_discrete_sequence=['#FF6347'])
+sale_price_chart.update_traces(marker=dict(color='#FF6347', line=dict(color='black', width=1)))
+
+# Car Year - Line Chart with Color
+car_year_chart = px.line(df.groupby('Car Year').size().reset_index(name='Sales'), 
+                         x='Car Year', y='Sales',
+                         title='Sales Over the Years', markers=True,
+                         line_shape='linear', color_discrete_sequence=['#20B2AA'])
+
+# Scatter Plot - Sale Price vs. Commission Earned with Color
+scatter_plot = px.scatter(df, x='Sale Price', y='Commission Earned', title='Sale Price vs. Commission Earned',
+                          color='Car Make', color_discrete_sequence=px.colors.qualitative.Set3)
+
+# Create a data table for Car Make and Sales Info
+car_make_data = df.groupby('Car Make').size().reset_index(name='Sales')
+car_make_data_table = dash_table.DataTable(
+    data=car_make_data.to_dict('records'),
+    columns=[{'name': 'Car Make', 'id': 'Car Make'}, {'name': 'Sales', 'id': 'Sales'}],
+    style_table={'height': '300px', 'overflowY': 'auto'},
+)
+
+# Layout of the dashboard
+app.layout = html.Div([
+    html.H1("Car Sales Dashboard", style={'text-align': 'center', 'font-family': 'Arial', 'color': '#2E8B57'}),
+    
+    # Section 1: Car Make & Pie chart and Data table side by side
+    html.Div([
+        html.Div([
+            dcc.Graph(figure=car_make_chart),
+            car_make_data_table,
+        ], style={'width': '48%', 'display': 'inline-block'}),
+        
+        html.Div([
+            dcc.Graph(figure=car_model_chart),
+        ], style={'width': '48%', 'display': 'inline-block'}),
+    ], style={'display': 'flex', 'justify-content': 'space-between'}),
+    
+    # Section 2: Commission Rate & Earned Charts side by side
+    html.Div([
+        html.Div([
+            dcc.Graph(figure=commission_rate_chart),
+        ], style={'width': '48%', 'display': 'inline-block'}),
+        
+        html.Div([
+            dcc.Graph(figure=commission_earned_chart),
+        ], style={'width': '48%', 'display': 'inline-block'}),
+    ], style={'display': 'flex', 'justify-content': 'space-between'}),
+    
+    # Section 3: Sale Price Box Plot and Car Year Line Chart side by side
+    html.Div([
+        html.Div([
+            dcc.Graph(figure=sale_price_chart),
+        ], style={'width': '48%', 'display': 'inline-block'}),
+        
+        html.Div([
+            dcc.Graph(figure=car_year_chart),
+        ], style={'width': '48%', 'display': 'inline-block'}),
+    ], style={'display': 'flex', 'justify-content': 'space-between'}),
+    
+    # Section 4: Scatter Plot
+    html.Div([
+        dcc.Graph(figure=scatter_plot),
+    ])
+])
+
+# Run the app
+if __name__ == '__main__':
+    app.run_server(debug=True)
